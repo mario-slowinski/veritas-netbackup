@@ -26,7 +26,7 @@
     awk -f nbdb_unload.awk -v table=EMM_Media$ reload.sql
     ```
 
-* Generate awk script for selected table, i.e. EMM_Media
+* Generate awk script for selected table (no regex is allowed here) i.e. EMM_Media
 
   ```bash
   awk -f nbdb_unload.awk -v table=EMM_Media -v key=MediaId -v generate=1 reload.sql > EMM_Media.awk

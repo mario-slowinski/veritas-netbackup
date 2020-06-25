@@ -31,7 +31,7 @@ else {
 }
 }
 END {
-	if(generate) {
+	if(generate && length(nbdbtable) > 0) {
 		if(table=="" || key=="") {
 			print "Please run script with required parameters"
 			print "awk -f nbdb_unload.awk -v table=<EMM_table_name> -v key=<EMM_table_column_name> -v generate=1 reload.sql"
@@ -48,7 +48,8 @@ END {
 		print ""
 		print "{"
         	print "\tprint \"\""
-        	print "\tprint \"BEGIN TRANSACTION \"$"table"[\""key"\"]\";\""
+		print "\ttransid=$"table"[\""key"\"]; gsub(\"'\",\"\",transid)"
+        	print "\tprint \"BEGIN TRANSACTION \"transid\";\""
         	print "\tprint \"UPDATE EMM_MAIN."table"\""
 		print "\tprint \"SET\""
 		for(column=1; column<length(nbdbtable); column++) {
@@ -56,7 +57,7 @@ END {
 		}
         	print "\tprint \"     "nbdbtable[column]"\t= \"$"table"[\""nbdbtable[column]"\"]"
 		print "\tprint \"WHERE EMM_MAIN."table"."key" = \"$"table"[\""key"\"]\";\""
-        	print "\tprint \"COMMIT TRANSACTION \"$"table"[\""key"\"]\";\""
+        	print "\tprint \"COMMIT TRANSACTION \"transid\";\""
         	print "\tprint \"\""
 		print "}"
 		print ""
@@ -66,5 +67,8 @@ END {
 		print "\tprint \"-- Save output to sqlfile and run below command replacing <masterservername>\""
 		print "\tprint \"-- LD_LIBRARY_PATH=/usr/openv/db/lib/ /usr/openv/db/bin/dbisqlc -c \\\"CS=utf8;UID=dba;PWD=nbusql;ENG=NB_<masterservername>;DBN=NBDB;LINKS=tcpip(IP=127.0.0.1;PORT=13785)\\\" <sqlfile>\""
 		print "}"
+	}
+	else {
+		print "SQL table",table,"not found!"
 	}
 }
