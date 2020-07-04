@@ -1,20 +1,25 @@
 #!/bin/awk
 
 function EMM_Machine() {
-	machinetype[5]="master"
+	machinetype[3]="master"
 	machinetype[1]="media"
 	machinetype[2]="ndmp"
+	machinetype[5]="cluster"
 	machinetype[6]="server"
+	machinetype[8]="client"
+	machinetype[14]="appliance"
 	operatingsystem[5]="rs6000"
 	operatingsystem[16]="linux"
-	if($14 > 0) { netbackupversion="-netbackupversion "$14 }
+	if($14 > 0) { netbackupversion="-netbackupversion "substr($14,1,1)"."substr($14,2,1)"."substr($14,3,1) }
+	if($8 == 3) { masterserver=$4 } if($8 == 5) { masterserver=$4 }
 	if($12) {
 		print "nbemmcmd",
 			"-addhost",
 			"-machinename",$4,
 			"-machinetype",machinetype[$8],
 			"-operatingsystem",operatingsystem[$12],
-			netbackupversion
+			netbackupversion,
+			"- masterserver",masterserver
 	}
 }
 function EMM_MediaPool() {

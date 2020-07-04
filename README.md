@@ -1,8 +1,21 @@
 # Scripts for Veritas Netbackup
 
-* [nbdb_unload](#nbdb_unload) - search and update
-* [drives-list](#drives-list) - list and compare installed and scanned tape drives
 * [oneliners](#oneliners)
+* [nbdb_unload](#nbdb_unload) - search and update
+* [slp-duplicate](#slp-duplicate) - slp creation commands batch
+* [drives-list](#drives-list) - list and compare installed and scanned tape drives
+* [policy-update](#policy-update) - update policy backup destination
+
+--------------------------------------------------------------------------------
+
+## oneliners
+
+* activate/deactivate policy as set in snapshot
+
+  ```bash
+  cp -r /usr/openv/netbackup/db/class /usr/openv/netbackup/db/class-snapshot-$(date '+%Y%m%d')
+  for FILE in $(find /usr/openv/netbackup/db/class-snapshot-`date '+%Y%m%d'` -maxdepth 2 -type f -name info); do POLICY=`dirname ${FILE}`; echo "bpplinfo ${POLICY##*/} -modify `sed -n '/^ACTIVE/{s/ACTIVE 0/-active/;s/ACTIVE 1/-inactive/;p}' ${FILE}`"; done
+  ```
 
 --------------------------------------------------------------------------------
 
@@ -45,18 +58,18 @@
     gawk -f nbdb_unload.gawk -v table=EMM_MediaPool -v generate=cmd 778.dat
     ```
 
-  * Generate batch to add tape pools
+  * Generate batch to add tape pools, use shell to set and use pools environment variable
 
-    * assign pool numbers to pool names, copy and paste output into shell session
+    * assign pool numbers to pool names, save to shell script
 
       ```bash
-      vmpool -list_all -bx | gawk 'BEGIN{print "unset pools; declare -A pools"} $2~/^[0-9]+$/ {print "pools["$1"]="$2";"}'
+      vmpool -list_all -bx | gawk 'BEGIN{print "unset pools; declare -A pools"} $2~/^[0-9]+$/ {print "pools["$1"]="$2";"}' > /tmp/vmpool.sh
       ```
 
-    * generate vmadd batch
+    * generate vmadd batch, append to the same shell script
 
       ```bash
-      gawk -f nbdb_unload.gawk -v table=EMM_Media -v generate=cmd 775.dat
+      gawk -f nbdb_unload.gawk -v table=EMM_Media -v generate=cmd 775.dat >> /tmp/vmpool.sh
       ```
 
 * Update NBDB directly using prepared SQL file
@@ -76,7 +89,7 @@
     ```
 
   * Stop all netbackup services.
-    
+
   * Start NBDB service only with `nbdbms_start_server`.
 
   * Replace *[masterservername]* with name of your master server and run `dbisqlc` to apply updates from *[sqlfile]*.
@@ -84,6 +97,16 @@
     ```bash
     LD_LIBRARY_PATH=/usr/openv/db/lib/ /usr/openv/db/bin/dbisqlc -c "CS=utf8;UID=dba;PWD=nbusql;ENG=NB_[masterservername];DBN=NBDB;LINKS=tcpip(IP=127.0.0.1;PORT=13785)" [sqlfile]
     ```
+
+--------------------------------------------------------------------------------
+
+## slp-duplicate
+
+Generate SLP creation shell commands batch from nbstl output
+
+```bash
+awk -f slp-duplicate.awk [nbstl output]
+```
 
 --------------------------------------------------------------------------------
 
@@ -111,11 +134,10 @@ List and compare installed and scanned tape drives. Useful to configure tape dri
 
 --------------------------------------------------------------------------------
 
-## oneliners
+## policy-update
 
-* activate/deactivate policy as set in snapshot
+Change storage unit STU for selected backup policy
 
-  ```bash
-  cp /usr/openv/netbackup/db/class /usr/openv/netbackup/class-snapshot-`date '+%Y%m%d'`
-  for FILE in `find /usr/openv/netbackup/db/class-snapshot-`date '+%Y%m%d'` -maxdepth 2 -type f -name info`; do POLICY=`dirname ${FILE}`; echo "bpplinfo -set ${POLICY##*/} `sed -n '/^ACTIVE/{s/ACTIVE 0/-active/;s/ACTIVE 1/-inactive/;p}' ${FILE}`"; done
-  ```
+```bash
+bpplist | awk -f policy-update.awk -v oldstu=[oldstu] -v newstu=[newstu]
+```
