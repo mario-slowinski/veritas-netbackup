@@ -19,7 +19,7 @@
     lvol:
       vg: "{{ lookup('dict', ansible_facts['lvm']['vgs'])['key'] }}"
       lv: openv
-      size: 16g
+      size: 8g
 
   - name: "Create openv filesystem"
     tags: 
@@ -69,4 +69,44 @@
       home: /opt/openv
       password: "!"
       shell: "/bin/false"
+
+  - name: "Disable SELinux"
+    tags: selinux
+    selinux:
+      state: disabled
+
+  - name: "Disable firewalld"
+    tags: firewall
+    service:
+      name: firewalld
+      state: stopped
+      enabled: no
+
+  - name: "Install required libraries"
+    tags: yum
+    yum:
+      name: libnsl
+      state: latest
+
+  - name: "Add NetBackup binaries locations to PATH"
+    tags:
+    - env
+    blockinfile:
+      path: ~/.bash_profile
+      insertafter: '^PATH='
+      marker: "# {mark} NetBackup paths"
+      block: |
+        [ -d /usr/openv/netbackup/bin ] && PATH=${PATH}:/usr/openv/netbackup/bin
+        [ -d /usr/openv/netbackup/bin/admincmd ] && PATH=${PATH}:/usr/openv/netbackup/bin/admincmd
+        [ -d /usr/openv/volmgr/bin ] && PATH=${PATH}:/usr/openv/volmgr/bin
+        [ -d /usr/openv/netbackup/sec/at/bin ] && PATH=${PATH}:/usr/openv/netbackup/sec/at/bin
+        [ -d /usr/openv/man ] && MANPATH=${MANPATH}:/usr/openv/man
+
+  - name: "Export PATH and MANPATH"
+    tags:
+    - env
+    lineinfile:
+      path: ~/.bash_profile
+      regexp: '^export PATH'
+      line: 'export PATH MANPATH'
 
