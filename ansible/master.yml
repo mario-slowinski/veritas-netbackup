@@ -1,0 +1,72 @@
+- name: "Configure NetBackup Master Server"
+  hosts: all
+  gather_facts: yes
+  tasks:
+  - name: "Configure static network"
+    tags: network_static
+    include_role:
+      name: network_static
+
+  - name: "Configure ssh"
+    tags: ssh
+    include_role:
+      name: ssh
+
+  - name: "Create openv LVM volume"
+    tags: 
+    - volume-lvm
+    - volume
+    lvol:
+      vg: "{{ lookup('dict', ansible_facts['lvm']['vgs'])['key'] }}"
+      lv: openv
+      size: 16g
+
+  - name: "Create openv filesystem"
+    tags: 
+    - volume-fs
+    - volume
+    filesystem:
+      fstype: ext4
+      dev: "/dev/{{ lookup('dict', ansible_facts['lvm']['vgs'])['key'] }}/openv"
+      opts: "-m 1 -Lopenv"
+
+  - name: "Mount openv filesystem"
+    tags: 
+    - volume-mount
+    - volume
+    mount:
+      src: "/dev/{{ lookup('dict', ansible_facts['lvm']['vgs'])['key'] }}/openv"
+      path: /opt/openv
+      fstype: ext4
+      state: mounted
+
+  - name: "Create openv symbolic link"
+    tags: 
+    - volume-link
+    - volume
+    file:
+      src: /opt/openv
+      path: "../usr/openv"
+      state: link
+
+  - name: "Create 'nbwebgrp' group"
+    tags:
+    - webui-group
+    - webui
+    group:
+      name: nbwebgrp
+      gid: 64
+
+  - name: "Create 'nbwebsvc' user"
+    tags:
+    - webui-user
+    - webui
+    user:
+      name: nbwebsvc
+      group: nbwebgrp
+      uid: 64
+      comment: "NetBackup WEB Service"
+      home: /opt/openv
+      password: "!"
+      shell: "/bin/false"
+
