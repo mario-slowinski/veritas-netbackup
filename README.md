@@ -4,6 +4,7 @@
 * [nbdb_unload](#nbdb_unload) - search and update
 * [slp-duplicate](#slp-duplicate) - slp creation commands batch
 * [drives-list](#drives-list) - list and compare installed and scanned tape drives
+* [configDrives](#configDrives) - batch drives configure with tpconfig
 * [policy-update](#policy-update) - update policy backup destination
 
 --------------------------------------------------------------------------------
@@ -130,6 +131,18 @@ List and compare installed and scanned tape drives. Useful to configure tape dri
 
   ```bash
   ./drive-list.sh -m
+  ```
+
+--------------------------------------------------------------------------------
+
+## configDrives
+
+Print batch set of tpconfig commands to configure tape drives
+
+* with pipe output of `/usr/openv/volmgr/bin/scan` command i.e.
+
+  ```bash
+  /usr/openv/volmgr/bin/scan | awk -f configDrives.awk robnum=1 robpath=/dev/sg21 drindex=10 name="LTO drive "
   ```
 
 --------------------------------------------------------------------------------
