@@ -11,6 +11,12 @@
 
 ## oneliners
 
+* restart Media Manager on all media servers
+
+  ```bash
+  nbemmcmd -listhosts | grep media | awk '{print "vmoprcmd -h",$2,"-stopltid && vmoprcmd -h",$2,"-startltid"}' | sh
+  ```
+  
 * activate/deactivate policy as set in snapshot
 
   ```bash
